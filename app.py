@@ -1,6 +1,5 @@
 from selenium import webdriver
 from bs4 import BeautifulSoup
-#from PyQt5.QtWidgets import QInputDialog, QApplication, QLabel
 from tkinter import *
 import xlsxwriter
 
@@ -57,16 +56,23 @@ def get_elems(soup):
 inp = "теплоизоляция"
 
 root = Tk()
-e = Entry(root)
-e.pack()
+root.title("Сбербанк")
+root.geometry("300x100")
+e = Entry(root, width=100)
+e.pack(pady=10)
 e.focus_set()
 
 def callback():
+	global inp
 	inp = e.get()
+	root.destroy()
 
-b = Button(root, text="Submit", width=10, command=callback)
+b = Button(root, text="Подтвердить", width=100, height=50, command=callback)
 b.pack() 
 
+root.mainloop()
+
+print(inp)
 
 search = "https://www.rosfirm.ru/catalog?field_keywords=" + inp + "&search=1"
 driver = webdriver.Safari()
@@ -85,7 +91,7 @@ for i in range(1, pages):
 
 workbook = xlsxwriter.Workbook('результат.xlsx')
 worksheet = workbook.add_worksheet()
-for i in range(companies_on_page*pages):
+for i in range(len(description_list)):
 	worksheet.write(i, 0, description_list[i][1])
 	worksheet.write(i, 1, description_list[i][0])
 	worksheet.write(i, 2, info_list[i][1])
