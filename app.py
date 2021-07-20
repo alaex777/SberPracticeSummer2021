@@ -1,7 +1,11 @@
 from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
 from tkinter import *
 import xlsxwriter
+import time
+
+#start of rosfrim parser
 
 companies_on_page = 20
 
@@ -96,6 +100,40 @@ for i in range(len(description_list)):
 	worksheet.write(i, 1, description_list[i][0])
 	worksheet.write(i, 2, info_list[i][1])
 	worksheet.write(i, 3, info_list[i][0])
+
+# end of rosfirm parser
+
+# start of списокфирм parser
+
+worksheet = workbook.add_worksheet()
+search = "https://списокфирм.рф/"
+driver.get(search)
+inp_elem = driver.find_element_by_id("zapros")
+inp_elem.send_keys(inp)
+inp_elem.send_keys(Keys.ENTER)
+inp_elem.submit()
+
+links = []
+
+time.sleep(2)
+
+soup = BeautifulSoup(driver.page_source, 'html.parser')
+divs = soup.find_all("div", {"class": "orglist_full_company"})
+for div in divs:
+    links.append(div.find("a").get("href"))
+
+count = 0
+
+for link in links:
+    driver.get(search + link)
+    soup = BeautifulSoup(driver.page_source, "html.parser")
+    worksheet.write(count, 0, soup.find("div", {"class": "nazvanie_firmi"}).find("h1").text.strip())
+    worksheet.write(count, 3, soup.find("div", {"class": "content_firmi"}).find_all("p")[1].text.strip())
+    worksheet.write(count, 1, soup.find("a", {"rel": "nofollow", "target": "_blank"}).get("href").strip()[12::])
+    worksheet.write(count, 2, soup.find("div", {"class": "content_firmi"}).find_all("p")[5].text.strip())
+    count += 1
+
+# end of списокфирм parser
 
 workbook.close()
 driver.quit()
