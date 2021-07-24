@@ -79,7 +79,9 @@ root.mainloop()
 print(inp)
 
 search = "https://www.rosfirm.ru/catalog?field_keywords=" + inp + "&search=1"
+
 driver = webdriver.Safari()
+
 driver.get(search)
 
 soup = BeautifulSoup(driver.page_source, 'html.parser')
@@ -94,6 +96,7 @@ for i in range(1, pages):
 	get_elems(soup)
 
 workbook = xlsxwriter.Workbook('результат.xlsx')
+
 worksheet = workbook.add_worksheet()
 for i in range(len(description_list)):
 	worksheet.write(i, 0, description_list[i][1])
@@ -134,6 +137,86 @@ for link in links:
     count += 1
 
 # end of списокфирм parser
+
+# start of rbc parser
+
+worksheet = workbook.add_worksheet()
+search = "https://www.rbc.ru/companies/search/?query=" + inp
+driver.get(search)
+
+soup = BeautifulSoup(driver.page_source, 'html.parser')
+
+pages = soup.find_all("a", {"class": "pagination__item"})[3].text
+
+names, links, addresses, register_dates, inns, ogrns, directors = [], [], [], [], [], [], []
+
+def get_info(soup):
+	cards = soup.find_all("div", {"class": "company-card info-card"})
+	for card in cards:
+		name = ""
+		if card.find("span", {"class": "company-name-highlight__opf abbr"}) is not None:
+			name = card.find("span", {"class": "company-name-highlight__opf abbr"}).text
+		name_2 = card.find("a", {"class": "company-name-highlight"}).text
+		names.append(name + " " + name_2 + " " + card.find("a", {"class": "company-name-highlight"}).find("em").text)
+		director = card.find("p", {"class": "company-card__info"}).text.split(":")
+		count = 0
+		if ("Директор" in director) or ("Ликвидатор" in director) or ("Генеральный Директор" in director) or ("Конкурсный Управляющий" in director) or ("БУХГАЛТЕР" in director) or ("Управляющий - Индивидуальный Предприниматель" in director):
+			directors.append(director[1])
+			count += 1
+		else:
+			directors.append("")
+		company_info = card.find_all("p", {"class": "company-card__info"})
+		address = company_info[count].text.split(":")
+		if "Юридический адрес" in address:
+			addresses.append(address[1])
+			count += 1
+		else:
+			if count == 0:
+				count += 1
+				address = company_info[count].text.split(":")
+				if "Юридический адрес" in address:
+					addresses.append(address[1])
+					count += 1
+				else:
+					addresses.append("")
+		register_date = company_info[count].text.split(":")
+		if "Дата регистрации" in register_date:
+			register_dates.append(register_date[1])
+			count += 2
+		else:
+			register_dates.append("")
+			count += 1
+		inn = company_info[count].text.split(":")
+		if "ИНН" in inn:
+			inns.append(inn[1])
+			count += 1
+		else:
+			inns.append("")
+		ogrn = company_info[count].text.split(":")
+		if "ОГРН" in ogrn:
+			ogrns.append(ogrn[1])
+			count += 1
+		else:
+			ogrns.append("")
+		links.append(card.find("a", {"class": "company-name-highlight"}).get("href"))
+
+get_info(soup)
+for i in range(2, int(pages)):
+	search = "https://www.rbc.ru/companies/search/?query=" + inp + "&page=" + str(i)
+	driver.get(search)
+	soup = BeautifulSoup(driver.page_source, 'html.parser')
+	get_info(soup)
+
+for i in range(len(names)):
+	worksheet.write(i, 0, names[i])
+	worksheet.write(i, 1, links[i])
+	worksheet.write(i, 2, addresses[i])
+	worksheet.write(i, 3, register_dates[i])
+	worksheet.write(i, 4, directors[i])
+	worksheet.write(i, 5, inns[i])
+	worksheet.write(i, 6, ogrns[i])
+
+# end of rbc parser
 
 workbook.close()
 driver.quit()
